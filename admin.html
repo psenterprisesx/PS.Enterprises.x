@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - PS-Enterprises</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; background: #f4f6f9; padding: 15px; margin: 0; display: flex; justify-content: center; }
+        .box { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); width: 100%; max-width: 450px; box-sizing: border-box; }
+        h2 { margin-top: 0; color: #1a1a1a; font-size: 20px; border-bottom: 2px solid #f0f0f0; padding-bottom: 10px; }
+        label { font-size: 13px; font-weight: 600; color: #444; }
+        input, select, button { width: 100%; padding: 12px; margin: 6px 0 16px 0; box-sizing: border-box; border: 1px solid #ccc; border-radius: 6px; font-size: 15px; }
+        button { background: #007bff; color: white; font-weight: bold; border: none; cursor: pointer; margin-top: 10px; }
+        button:hover { background: #0056b3; }
+        .hidden { display: none; }
+        .car-item { display: flex; justify-content: space-between; align-items: center; background: #f8f9fa; padding: 12px; margin: 8px 0; border-radius: 6px; border: 1px solid #eee; }
+        .car-item span { font-weight: 500; font-size: 14px; }
+        .delete-btn { background: #dc3545; width: auto; padding: 6px 12px; margin: 0; font-size: 13px; }
+        .delete-btn:hover { background: #bd2130; }
+    </style>
+</head>
+<body>
+
+    <div id="loginBox" class="box">
+        <h2>Admin Login</h2>
+        <label>Username</label>
+        <input type="text" id="username" placeholder="Enter Admin Username">
+        <label>Password</label>
+        <input type="password" id="password" placeholder="Enter Admin Password">
+        <button onclick="checkLogin()">Login</button>
+    </div>
+
+    <div id="dashboardBox" class="box hidden">
+        <h2>🚀 Add New Car Listing</h2>
+        <form id="carForm">
+            <label>Car Name & Model</label>
+            <input type="text" id="title" placeholder="e.g. Maruti Suzuki Swift VXI" required>
+            
+            <label>Price</label>
+            <input type="text" id="price" placeholder="e.g. ₹5,50,000" required>
+            
+            <label>Manufacturing Year</label>
+            <input type="text" id="year" placeholder="e.g. 2021" required>
+            
+            <label>Fuel Type</label>
+            <input type="text" id="fuel" placeholder="e.g. Petrol / Diesel / CNG" required>
+            
+            <label>Kilometers Driven</label>
+            <input type="text" id="km" placeholder="e.g. 32,000 km" required>
+            
+            <label>Transmission</label>
+            <input type="text" id="transmission" placeholder="Manual / Automatic" required>
+            
+            <label>Photo Image URL Link</label>
+            <input type="text" id="image" placeholder="Paste clear image address link" required>
+            
+            <label>Vehicle Category</label>
+            <select id="category">
+                <option value="Hatchback">Hatchback</option>
+                <option value="SUV">SUV</option>
+                <option value="Sedan">Sedan</option>
+            </select>
+            
+            <label>Showroom Availability Status</label>
+            <select id="status">
+                <option value="Available">Available</option>
+                <option value="Sold">Sold</option>
+            </select>
+            
+            <button type="submit">Upload Vehicle to App</button>
+        </form>
+
+        <h2 style="margin-top: 30px;">🗑️ Current Showroom Showcases</h2>
+        <div id="currentInventory"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = "https://xozygtgkrrxyxhrxsdnp.supabase.co";
+        const SUPABASE_KEY = "https://xozygtgkrrxyxhrcxdnp.supabase.co/rest/v1/Cars"; // <-- Paste your Anon Public Key inside these quotes
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // Access Configuration Credentials
+        const ADMIN_USER = "admin123";      // You can change your user login name here
+        const ADMIN_PASS = "securepass789"; // You can change your login password here
+
+        function checkLogin() {
+            const u = document.getElementById('username').value;
+            const p = document.getElementById('password').value;
+            if(u === ADMIN_USER && p === ADMIN_PASS) {
+                document.getElementById('loginBox').classList.add('hidden');
+                document.getElementById('dashboardBox').classList.remove('hidden');
+                loadInventory();
+            } else {
+                alert("Access Denied: Incorrect Credentials!");
+            }
+        }
+
+        document.getElementById('carForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const carData = {
+                title: document.getElementById('title').value,
+                price: document.getElementById('price').value,
+                year: document.getElementById('year').value,
+                fuel: document.getElementById('fuel').value,
+                km: document.getElementById('km').value,
+                transmission: document.getElementById('transmission').value,
+                image: document.getElementById('image').value,
+                category: document.getElementById('category').value,
+                status: document.getElementById('status').value
+            };
+
+            const { error } = await supabase.from('cars').insert([carData]);
+            if (error) {
+                alert("Database insertion failure!");
+            } else {
+                alert("Showroom listing posted successfully!");
+                document.getElementById('carForm').reset();
+                loadInventory();
+            }
+        });
+
+        async function loadInventory() {
+            const container = document.getElementById('currentInventory');
+            container.innerHTML = '<p style="font-size:14px; color:#666;">Syncing inventory elements...</p>';
+            let { data: cars } = await supabase.from('cars').select('*');
+            container.innerHTML = '';
+            if(cars) {
+                cars.forEach(car => {
+                    container.innerHTML += `
+                        <div class="car-item">
+                            <span>${car.title} (${car.price})</span>
+                            <button class="delete-btn" onclick="deleteCar(${car.id})">Delete</button>
+                        </div>
+                    `;
+                });
+            }
+        }
+
+        async function deleteCar(id) {
+            if(confirm("Confirm action: Permanently erase this vehicle listing?")) {
+                await supabase.from('cars').delete().eq('id', id);
+                loadInventory();
+            }
+        }
+    </script>
+</body>
+</html>
