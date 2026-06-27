@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PS-Enterprises Motors</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+    <header>
+        <div class="header-container">
+            <div class="logo">PS-Enterprises <span>Motors</span></div>
+            
+            <div class="nav-menu">
+                <button class="nav-btn active" onclick="filterCars('All')">All Cars</button>
+                <button class="nav-btn" onclick="filterCars('Available')">Available</button>
+                <button class="nav-btn" onclick="filterCars('SUV')">SUVs</button>
+                <button class="nav-btn" onclick="filterCars('Sedan')">Sedans</button>
+                <button class="nav-btn" onclick="filterCars('Hatchback')">Hatchbacks</button>
+                <button class="nav-btn" onclick="filterCars('Sold')">Sold Out</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-wrapper">
+        <div class="car-grid" id="inventoryGrid"></div>
+    </main>
+
+    <script>
+        // Core Connection Details
+        const SUPABASE_URL = "https://xozygtgkrrxyxhrxsdnp.supabase.co";
+        const SUPABASE_KEY = "YOUR_ANON_PUBLIC_KEY_HERE"; // <-- Paste your Anon Public Key inside these quotes
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let activeInventory = [];
+
+        async function fetchLiveInventory() {
+            let { data: cars, error } = await supabase.from('cars').select('*');
+            if (!error) {
+                activeInventory = cars;
+                displayCars(activeInventory);
+            }
+        }
+
+        function displayCars(carsToRender) {
+            const grid = document.getElementById('inventoryGrid');
+            grid.innerHTML = '';
+            
+            if(carsToRender.length === 0) {
+                grid.innerHTML = '<p style="text-align:center; width:100%; color:#666;">No cars found matching this category.</p>';
+                return;
+            }
+
+            carsToRender.forEach(car => {
+                const badgeClass = car.status.toLowerCase() === 'sold' ? 'status-sold' : 'status-available';
+                
+                // Set your friend's dad's real phone number and business email below
+                const whatsappUrl = `https://api.whatsapp.com/send?phone=919999999999&text=Hi, I am interested in buying the ${encodeURIComponent(car.title)}`;
+                const emailUrl = `mailto:yourbusiness@email.com?subject=Inquiry for ${encodeURIComponent(car.title)}`;
+
+                grid.innerHTML += `
+                    <div class="car-card">
+                        <span class="badge ${badgeClass}">${car.status}</span>
+                        <img class="car-thumb" src="${car.image}" alt="${car.title}" onerror="this.src='https://placehold.co/600x400?text=No+Image'">
+                        <div class="car-info">
+                            <h2 class="car-title">${car.title}</h2>
+                            <div class="specs">
+                                <span>🗓️ ${car.year}</span> | <span>⛽ ${car.fuel}</span><br>
+                                <span>🛣️ ${car.km}</span> | <span>⚙️ ${car.transmission}</span>
+                            </div>
+                            <div class="price">${car.price}</div>
+                            <div class="action-buttons">
+                                <a href="${whatsappUrl}" class="btn whatsapp-btn" target="_blank">💬 WhatsApp</a>
+                                <a href="${emailUrl}" class="btn email-btn" target="_blank">✉️ Email</a>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function filterCars(criteria) {
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            if(criteria === 'All') {
+                displayCars(activeInventory);
+            } else if (criteria === 'Available' || criteria === 'Sold') {
+                displayCars(activeInventory.filter(car => car.status === criteria));
+            } else {
+                displayCars(activeInventory.filter(car => car.category === criteria));
+            }
+        }
+
+        fetchLiveInventory();
+    </script>
+</body>
+</html>
